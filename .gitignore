@@ -1,0 +1,23 @@
+# Ignore Python cache and temp files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Ignore IntelliJ / JetBrains config files
+.idea/
+
+# Ignore virtual environments
+venv/
+.env/
+
+# Ignore PyInstaller build folders and output
+build/
+dist/
+*.spec
+
+# Ignore executables
+*.exe
+
+# Ignore system files
+.DS_Store
+Thumbs.db
