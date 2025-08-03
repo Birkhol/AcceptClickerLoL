@@ -105,14 +105,18 @@ class ImageClickerApp:
         self.stop_button.config(state=tk.DISABLED)
 
     def check_champion_select(self, screenshot_bgr):
-        champ_select_path = resource_path("resources/ChampionSelect.png")
-        champ_template = cv2.imread(champ_select_path)
-        if champ_template is None:
+        champ_select_path1 = resource_path("resources/ChampionSelect.png")
+        champ_select_path2 = resource_path("resources/ChampionSelectARAMURF.png")
+        champ_template1 = cv2.imread(champ_select_path1)
+        champ_template2 = cv2.imread(champ_select_path2)
+        if champ_template1 is None and champ_template2 is None:
             return False
 
-        result = cv2.matchTemplate(screenshot_bgr, champ_template, cv2.TM_CCOEFF_NORMED)
-        locations = np.where(result >= 0.85)
-        return len(locations[0]) > 0
+        result1 = cv2.matchTemplate(screenshot_bgr, champ_template1, cv2.TM_CCOEFF_NORMED)
+        result2 = cv2.matchTemplate(screenshot_bgr, champ_template2, cv2.TM_CCOEFF_NORMED)
+        match1 = np.where(result1 >= 0.85)
+        match2 = np.where(result2 >= 0.85)
+        return len(match1[0]) > 0 or len(match2[0]) > 0
 
     def scan_loop(self):
         target_path = resource_path(os.path.join("resources", "AcceptButton.png"))
