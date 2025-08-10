@@ -113,7 +113,9 @@ class ImageClickerApp:
             resource_path("resources/SelectChampionFrance.png"),
             resource_path("resources/SelectChampionFranceARAM.png"),
             resource_path("resources/SelectChampionKorea.png"),
-            resource_path("resources/SelectChampionKoreaARAM.png")
+            resource_path("resources/SelectChampionKoreaARAM.png"),
+            resource_path("resources/SelectChampionPortuguese.png"),
+            resource_path("resources/SelectChampionPortugueseARAM.png")
         ]
 
         for image in image_paths_champselect:
@@ -134,7 +136,8 @@ class ImageClickerApp:
             resource_path("resources/AcceptButton.png"),
             resource_path("resources/AcceptButtonSpain.png"),
             resource_path("resources/AcceptButtonFrance.png"),
-            resource_path("resources/AcceptButtonKorea.png")
+            resource_path("resources/AcceptButtonKorea.png"),
+            resource_path("resources/AcceptButtonPortuguese.png")
         ]
 
         templates = []
