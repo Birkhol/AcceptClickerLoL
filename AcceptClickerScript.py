@@ -109,7 +109,9 @@ class ImageClickerApp:
             resource_path("resources/ChampionSelect.png"),
             resource_path("resources/ChampionSelectARAMURF.png"),
             resource_path("resources/SelectChampionSpain2.png"),
-            resource_path("resources/SelectChampionSpainARAM.png")
+            resource_path("resources/SelectChampionSpainARAM.png"),
+            resource_path("resources/SelectChampionFrance.png"),
+            resource_path("resources/SelectChampionFranceARAM.png")
         ]
 
         for image in image_paths_champselect:
@@ -128,7 +130,8 @@ class ImageClickerApp:
     def scan_loop(self):
         image_paths_accept = [
             resource_path("resources/AcceptButton.png"),
-            resource_path("resources/AcceptButtonSpain.png")
+            resource_path("resources/AcceptButtonSpain.png"),
+            resource_path("resources/AcceptButtonFrance.png")
         ]
 
         templates = []
