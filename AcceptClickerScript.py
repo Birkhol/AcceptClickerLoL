@@ -105,27 +105,40 @@ class ImageClickerApp:
         self.stop_button.config(state=tk.DISABLED)
 
     def check_champion_select(self, screenshot_bgr):
-        champ_select_path1 = resource_path("resources/ChampionSelect.png")
-        champ_select_path2 = resource_path("resources/ChampionSelectARAMURF.png")
-        champ_template1 = cv2.imread(champ_select_path1)
-        champ_template2 = cv2.imread(champ_select_path2)
-        if champ_template1 is None and champ_template2 is None:
-            return False
+        image_paths_champselect = [
+            resource_path("resources/ChampionSelect.png"),
+            resource_path("resources/ChampionSelectARAMURF.png"),
+            resource_path("resources/SelectChampionSpain2.png"),
+            resource_path("resources/SelectChampionSpainARAM.png")
+        ]
 
-        result1 = cv2.matchTemplate(screenshot_bgr, champ_template1, cv2.TM_CCOEFF_NORMED)
-        result2 = cv2.matchTemplate(screenshot_bgr, champ_template2, cv2.TM_CCOEFF_NORMED)
-        match1 = np.where(result1 >= 0.85)
-        match2 = np.where(result2 >= 0.85)
-        return len(match1[0]) > 0 or len(match2[0]) > 0
+        for image in image_paths_champselect:
+            template = cv2.imread(image)
+            if template is None:
+                continue
+
+            result = cv2.matchTemplate(screenshot_bgr, template, cv2.TM_CCOEFF_NORMED)
+            locations = np.where(result >= 0.85)
+
+            if len(locations[0]) > 0:
+                return True
+
+        return False
 
     def scan_loop(self):
-        target_path = resource_path(os.path.join("resources", "AcceptButton.png"))
-        target = cv2.imread(target_path)
+        image_paths_accept = [
+            resource_path("resources/AcceptButton.png"),
+            resource_path("resources/AcceptButtonSpain.png")
+        ]
 
-        if target is None:
-            messagebox.showerror("Error", f"Image not found: {target_path}")
-            self.stop_scan()
-            return
+        templates = []
+        for image in image_paths_accept:
+            template = cv2.imread(image)
+            if template is None:
+                messagebox.showerror("Error", f"Image not found: {image}")
+                self.stop_scan()
+                return
+            templates.append(template)
 
         while self.scanning:
             try:
@@ -138,29 +151,30 @@ class ImageClickerApp:
                     self.stop_scan()
                     return
 
-                result = cv2.matchTemplate(screenshot_bgr, target, cv2.TM_CCOEFF_NORMED)
-                threshold = 0.8
-                locations = np.where(result >= threshold)
+                for template in templates:
+                    result = cv2.matchTemplate(screenshot_bgr, template, cv2.TM_CCOEFF_NORMED)
+                    threshold = 0.8
+                    locations = np.where(result >= threshold)
 
-                if len(locations[0]) > 0:
-                    y, x = locations[0][0], locations[1][0]
-                    h, w = target.shape[:2]
-                    center_x, center_y = x + w // 2, y + h // 2
-                    pyautogui.moveTo(center_x, center_y, duration=0.2)
-                    pyautogui.click()
-                    time.sleep(1)  # Prevent spamming clicks
+                    if len(locations[0]) > 0:
+                        y, x = locations[0][0], locations[1][0]
+                        h, w = template.shape[:2]
+                        center_x, center_y = x + w // 2, y + h // 2
+                        pyautogui.moveTo(center_x, center_y, duration=0.2)
+                        pyautogui.click()
+                        time.sleep(1)  # Prevent spamming clicks
 
-                    # After accepting, wait a few seconds to check for Champ Select
-                    for _ in range(70):  #21 seconds max
-                        screenshot = pyautogui.screenshot()
-                        screenshot_bgr = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
-                        if self.check_champion_select(screenshot_bgr):
-                            self.status_label.config(text="Status: Champion Select detected", fg="#1976D2")
-                            self.stop_scan()
-                            self.root.quit()
-                            sys.exit()
-                        time.sleep(0.3)
-
+                        # After accepting, wait a few seconds to check for Champ Select
+                        for _ in range(70):  #21 seconds max
+                            screenshot = pyautogui.screenshot()
+                            screenshot_bgr = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
+                            if self.check_champion_select(screenshot_bgr):
+                                self.status_label.config(text="Status: Champion Select detected", fg="#1976D2")
+                                self.stop_scan()
+                                self.root.quit()
+                                sys.exit()
+                            time.sleep(0.3)
+                        break
                 else:
                     time.sleep(0.3)
 
@@ -171,9 +185,10 @@ class ImageClickerApp:
 # Run the app
 def resource_path(relative_path):
     try:
-        return os.path.join(sys._MEIPASS, relative_path)
-    except AttributeError:
-        return os.path.abspath(relative_path)
+        base_path = sys._MEIPASS  # temp folder when running as .exe
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
 
 
 if __name__ == "__main__":
