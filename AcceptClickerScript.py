@@ -189,7 +189,7 @@ class ImageClickerApp:
                                 self.root.quit()
                                 sys.exit()
                             time.sleep(0.3)
-                        break
+                        continue
                 else:
                     time.sleep(0.3)
 
