@@ -166,6 +166,7 @@ class ImageClickerApp:
                     self.stop_scan()
                     return
 
+                accept_clicked = False
                 for template in templates:
                     result = cv2.matchTemplate(screenshot_bgr, template, cv2.TM_CCOEFF_NORMED)
                     threshold = 0.8
@@ -177,21 +178,11 @@ class ImageClickerApp:
                         center_x, center_y = x + w // 2, y + h // 2
                         pyautogui.moveTo(center_x, center_y, duration=0.2)
                         pyautogui.click()
-                        time.sleep(1)  # Prevent spamming clicks
+                        self.status_label.config(text="Status: Match accepted; still scanning...", fg="#2E7D32")
+                        accept_clicked = True
+                        break
 
-                        # After accepting, wait a few seconds to check for Champ Select
-                        for _ in range(70):  #21 seconds max
-                            screenshot = pyautogui.screenshot()
-                            screenshot_bgr = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
-                            if self.check_champion_select(screenshot_bgr):
-                                self.status_label.config(text="Status: Champion Select detected", fg="#1976D2")
-                                self.stop_scan()
-                                self.root.quit()
-                                sys.exit()
-                            time.sleep(0.3)
-                        continue
-                else:
-                    time.sleep(0.3)
+                time.sleep(1 if accept_clicked else 0.3)
 
             except Exception as e:
                 messagebox.showerror("Error during scanning", str(e))
