@@ -9,6 +9,10 @@ import sys
 import os
 
 class ImageClickerApp:
+    SCAN_INTERVAL_SECONDS = 0.1
+    ACCEPT_THRESHOLD = 0.8
+    CHAMPION_SELECT_THRESHOLD = 0.85
+
     def __init__(self, root):
         self.root = root
         self.root.title("Accept Clicker")
@@ -104,9 +108,50 @@ class ImageClickerApp:
         self.start_button.config(state=tk.NORMAL)
         self.stop_button.config(state=tk.DISABLED)
 
-    def check_champion_select(self, screenshot_bgr):
+    def load_templates(self, image_paths, required):
+        templates = []
+        for image_path in image_paths:
+            template = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+            if template is None:
+                if required:
+                    raise FileNotFoundError(f"Image not found: {image_path}")
+                continue
+            templates.append(template)
+        return templates
+
+    def find_template(self, screenshot_gray, templates, threshold):
+        screenshot_height, screenshot_width = screenshot_gray.shape[:2]
+
+        for template in templates:
+            template_height, template_width = template.shape[:2]
+            if template_height > screenshot_height or template_width > screenshot_width:
+                continue
+
+            result = cv2.matchTemplate(
+                screenshot_gray,
+                template,
+                cv2.TM_CCOEFF_NORMED
+            )
+            _, best_score, _, best_location = cv2.minMaxLoc(result)
+
+            if best_score >= threshold:
+                return best_location, template.shape[:2]
+
+        return None
+
+    def scan_loop(self):
+        image_paths_accept = [
+            resource_path("resources/AcceptButton.png"),
+            resource_path("resources/AcceptButtonSpain.png"),
+            resource_path("resources/AcceptButtonFrance.png"),
+            resource_path("resources/AcceptButtonKorea.png"),
+            resource_path("resources/AcceptButtonPortuguese.png"),
+            resource_path("resources/AcceptButtonGermany.png"),
+            resource_path("resources/AcceptButtonRussia.png")
+        ]
         image_paths_champselect = [
             resource_path("resources/ChampionSelect.png"),
+            resource_path("resources/SelectChampionClassic.png"),
             resource_path("resources/ChampionSelectARAMURF.png"),
             resource_path("resources/SelectChampionSpain2.png"),
             resource_path("resources/SelectChampionSpainARAM.png"),
@@ -122,67 +167,58 @@ class ImageClickerApp:
             resource_path("resources/SelectChampionRussiaARAM.png")
         ]
 
-        for image in image_paths_champselect:
-            template = cv2.imread(image)
-            if template is None:
-                continue
+        try:
+            accept_templates = self.load_templates(image_paths_accept, required=True)
+            champion_select_templates = self.load_templates(
+                image_paths_champselect,
+                required=False
+            )
+        except FileNotFoundError as error:
+            messagebox.showerror("Error", str(error))
+            self.stop_scan()
+            return
 
-            result = cv2.matchTemplate(screenshot_bgr, template, cv2.TM_CCOEFF_NORMED)
-            locations = np.where(result >= 0.85)
-
-            if len(locations[0]) > 0:
-                return True
-
-        return False
-
-    def scan_loop(self):
-        image_paths_accept = [
-            resource_path("resources/AcceptButton.png"),
-            resource_path("resources/AcceptButtonSpain.png"),
-            resource_path("resources/AcceptButtonFrance.png"),
-            resource_path("resources/AcceptButtonKorea.png"),
-            resource_path("resources/AcceptButtonPortuguese.png"),
-            resource_path("resources/AcceptButtonGermany.png"),
-            resource_path("resources/AcceptButtonRussia.png")
-        ]
-
-        templates = []
-        for image in image_paths_accept:
-            template = cv2.imread(image)
-            if template is None:
-                messagebox.showerror("Error", f"Image not found: {image}")
-                self.stop_scan()
-                return
-            templates.append(template)
+        waiting_for_champion_select = False
 
         while self.scanning:
             try:
+                scan_started = time.perf_counter()
                 screenshot = pyautogui.screenshot()
-                screenshot_bgr = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
+                screenshot_gray = cv2.cvtColor(
+                    np.array(screenshot),
+                    cv2.COLOR_RGB2GRAY
+                )
 
-                # First check if we're in champ select
-                if self.check_champion_select(screenshot_bgr):
-                    self.status_label.config(text="Status: Champion Select detected", fg="#1976D2")
-                    self.stop_scan()
-                    return
+                if waiting_for_champion_select:
+                    champion_select_match = self.find_template(
+                        screenshot_gray,
+                        champion_select_templates,
+                        self.CHAMPION_SELECT_THRESHOLD
+                    )
+                    if champion_select_match is not None:
+                        self.status_label.config(
+                            text="Status: Champion Select detected",
+                            fg="#1976D2"
+                        )
+                        self.stop_scan()
+                        return
+                else:
+                    accept_match = self.find_template(
+                        screenshot_gray,
+                        accept_templates,
+                        self.ACCEPT_THRESHOLD
+                    )
+                    if accept_match is not None:
+                        (x, y), (height, width) = accept_match
+                        pyautogui.click(x + width // 2, y + height // 2)
+                        self.status_label.config(
+                            text="Status: Match accepted; waiting for Champion Select...",
+                            fg="#2E7D32"
+                        )
+                        waiting_for_champion_select = True
 
-                accept_clicked = False
-                for template in templates:
-                    result = cv2.matchTemplate(screenshot_bgr, template, cv2.TM_CCOEFF_NORMED)
-                    threshold = 0.8
-                    locations = np.where(result >= threshold)
-
-                    if len(locations[0]) > 0:
-                        y, x = locations[0][0], locations[1][0]
-                        h, w = template.shape[:2]
-                        center_x, center_y = x + w // 2, y + h // 2
-                        pyautogui.moveTo(center_x, center_y, duration=0.2)
-                        pyautogui.click()
-                        self.status_label.config(text="Status: Match accepted; still scanning...", fg="#2E7D32")
-                        accept_clicked = True
-                        break
-
-                time.sleep(1 if accept_clicked else 0.3)
+                elapsed = time.perf_counter() - scan_started
+                time.sleep(max(0, self.SCAN_INTERVAL_SECONDS - elapsed))
 
             except Exception as e:
                 messagebox.showerror("Error during scanning", str(e))
