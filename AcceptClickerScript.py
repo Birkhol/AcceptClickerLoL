@@ -202,20 +202,20 @@ class ImageClickerApp:
                         )
                         self.stop_scan()
                         return
-                else:
-                    accept_match = self.find_template(
-                        screenshot_gray,
-                        accept_templates,
-                        self.ACCEPT_THRESHOLD
+
+                accept_match = self.find_template(
+                    screenshot_gray,
+                    accept_templates,
+                    self.ACCEPT_THRESHOLD
+                )
+                if accept_match is not None:
+                    (x, y), (height, width) = accept_match
+                    pyautogui.click(x + width // 2, y + height // 2)
+                    self.status_label.config(
+                        text="Status: Match accepted; waiting for Champion Select...",
+                        fg="#2E7D32"
                     )
-                    if accept_match is not None:
-                        (x, y), (height, width) = accept_match
-                        pyautogui.click(x + width // 2, y + height // 2)
-                        self.status_label.config(
-                            text="Status: Match accepted; waiting for Champion Select...",
-                            fg="#2E7D32"
-                        )
-                        waiting_for_champion_select = True
+                    waiting_for_champion_select = True
 
                 elapsed = time.perf_counter() - scan_started
                 time.sleep(max(0, self.SCAN_INTERVAL_SECONDS - elapsed))
