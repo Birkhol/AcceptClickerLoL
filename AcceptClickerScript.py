@@ -18,7 +18,7 @@ class ImageClickerApp:
         self.root.title("Accept Clicker")
         self.root.geometry("360x250")
         self.root.configure(bg="#f4f4f4")
-        self.root.resizable(False, False)
+        self.root.resizable(True, True)
         self.scanning = False
         self.scan_thread = None
 
